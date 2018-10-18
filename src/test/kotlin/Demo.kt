@@ -1,105 +1,60 @@
-
-import tomasvolker.kyscript.*
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-
-
-fun test() {
-
-    val p = startProcess("java") {
-        arguments += "-version"
-        redirectErrorToOutput = true
-        inheritIO()
-    }
-
-}
-
-
-/*
-ProcessBuilder("command")
-    .command("other command", "arg1", "arg2")
-    .directory(File("current working directory"))
-    .inheritIO()
-    .redirectError(ProcessBuilder.Redirect.to(File("error file")))
-    .redirectError(ProcessBuilder.Redirect.PIPE)
-    .redirectErrorStream(false)
-    .redirectInput(ProcessBuilder.Redirect.PIPE)
-    .redirectOutput(ProcessBuilder.Redirect.PIPE)
-    .start()
-*/
-
-data class Command(val name: String)
-
-fun String.toCommand() = Command(this)
-
-operator fun Command.invoke(vararg args: String) =
-        readProcess(name) {
-            arguments = args.toList()
-        }
-
-fun getPythonVersion() =
-    "python".toCommand()("--version")
-        .removePrefix("Python")
-        .trim()
-
-fun getPython3Version() =
-    "python3".toCommand()("--version")
-        .removePrefix("Python")
-        .trim()
-
-fun getJavaVersion() =
-    "java".toCommand()("-version")
-        .lineSequence()
-        .first()
-        .removePrefix("java version")
-        .trim { it.isWhitespace() || it == '"' }
+import tomasvolker.kyscript.arguments
+import tomasvolker.kyscript.kyScript
+import tomasvolker.kyscript.readProcess
+import tomasvolker.kyscript.tempFile
 
 fun main() {
 
-    //test()
+    val script = kyScript {
 
+        importAs("numpy", alias = "np")
 
-    val echo = "echo".toCommand()
-    val ls = "ls".toCommand()
-    val pwd = "pwd".toCommand()
-    val python = "python".toCommand()
-    val python3 = "python3".toCommand()
-    val java = "java".toCommand()
+        nl(2)
 
-    println(java("-version"))
+        comment(
+            """
+        |Auto generated script
+        |Python is so shit we
+        |have to generate it
+        """.trimMargin()
+        )
 
-    println(getPython3Version())
+        nl()
 
+        val x = id("x")
+        val print = id("print")
+        val range = id("range")
 
-}
+        x assign 8
 
+        nl()
 
-data class ProcessResult(
-    val code: Int,
-    val output: String,
-    val error: String
-)
+        ifThen(inject("x > 5")) {
+            +print(x)
+        }
 
-fun String.runCommand(workingDir: File? = null): String? {
-    try {
-        val parts = this.split("\\s".toRegex())
-        val proc = ProcessBuilder(*parts.toTypedArray())
-            .directory(workingDir)
-            .redirectOutput(ProcessBuilder.Redirect.PIPE)
-            .redirectError(ProcessBuilder.Redirect.PIPE)
-            .start()
+        nl()
 
+        val i = id("i")
 
+        forEach(i, range(0, x)) {
+            +print(i)
+        }
 
-        proc.waitFor(60, TimeUnit.MINUTES)
-        return proc.inputStream.bufferedReader().readText()
-    } catch(e: IOException) {
-        e.printStackTrace()
-        return null
     }
-}
 
-fun runProcess(init: ProcessBuilder.()->Unit) =
-        ProcessBuilder().apply(init).start()/*.inputStream.bufferedReader().readText()*/
+    println(script)
+
+    val result = tempFile("kyscript_generated", ".py") { file ->
+
+        file.writeText(script)
+
+        readProcess("python3") {
+            arguments += file.absolutePath
+        }
+
+    }
+
+    println(result)
+
+}

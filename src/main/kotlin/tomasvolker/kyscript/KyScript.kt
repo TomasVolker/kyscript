@@ -1,5 +1,6 @@
 package tomasvolker.kyscript
 
+import java.io.File
 import java.lang.reflect.Array
 
 open class KyScriptWriter {
@@ -177,58 +178,4 @@ data class KyNamedArgument(val name: String, val value: Any?)
 
 inline fun kyScript(block: KyScriptWriter.()->Unit): String =
         KyScriptWriter().apply(block).build()
-
-
-fun main() {
-
-    val script = kyScript {
-
-        importAs("numpy", alias = "np")
-        fromImport("matplotlib", "Axis")
-
-        nl(2)
-
-        comment(
-        """
-        |Auto Generated script
-        |Python is so shit we
-        |have to generate it
-        """.trimMargin()
-        )
-
-        nl()
-
-        val x = id("x")
-        val print = id("print")
-        val range = id("range")
-
-        x assign 25
-
-        nl()
-
-        ifThen(inject("x > 5")) {
-            +print(x)
-        }
-
-        nl()
-
-        val i = id("i")
-
-        forEach(i, range(0, 10)) {
-            +print(i)
-        }
-
-        whileThen(inject("x > 5")) {
-
-            ifThen(inject("x < 10")) {
-                +print()
-            }
-
-        }
-
-    }
-
-    println(script)
-
-}
 

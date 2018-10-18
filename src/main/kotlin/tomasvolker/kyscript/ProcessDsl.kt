@@ -6,7 +6,7 @@ import java.util.concurrent.TimeoutException
 
 inline fun readProcess(
     command: String = "",
-    timeoutMillis: Long = Long.MAX_VALUE,
+    timeoutMillis: Long? = null,
     init: ProcessBuilder.()->Unit
 ): String {
     val process = startProcess(command) {
@@ -16,12 +16,14 @@ inline fun readProcess(
 
     try {
 
-        if(process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            return process.inputStream.bufferedReader().readText()
-        } else {
+        if (timeoutMillis == null) {
+            process.waitFor()
+        } else if(!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
             process.destroyForcibly()
             throw TimeoutException()
         }
+
+        return process.inputStream.bufferedReader().readText()
 
     } finally {
         process.destroyForcibly()
