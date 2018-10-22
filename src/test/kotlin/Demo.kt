@@ -1,7 +1,4 @@
-import tomasvolker.kyscript.arguments
-import tomasvolker.kyscript.kyScript
-import tomasvolker.kyscript.readProcess
-import tomasvolker.kyscript.tempFile
+import tomasvolker.kyscript.*
 
 fun main() {
 
@@ -9,7 +6,7 @@ fun main() {
 
         importAs("numpy", alias = "np")
 
-        nl(2)
+        newLine(2)
 
         comment(
             """
@@ -19,7 +16,7 @@ fun main() {
         """.trimMargin()
         )
 
-        nl()
+        newLine()
 
         val x = id("x")
         val print = id("print")
@@ -27,13 +24,13 @@ fun main() {
 
         x assign 8
 
-        nl()
+        newLine()
 
         ifThen(inject("x > 5")) {
             +print(x)
         }
 
-        nl()
+        newLine()
 
         val i = id("i")
 
@@ -45,15 +42,7 @@ fun main() {
 
     println(script)
 
-    val result = tempFile("kyscript_generated", ".py") { file ->
-
-        file.writeText(script)
-
-        readProcess("python3") {
-            arguments += file.absolutePath
-        }
-
-    }
+    val result = runKyScript(script)
 
     println(result)
 

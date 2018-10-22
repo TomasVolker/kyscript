@@ -14,25 +14,53 @@ inline fun <T> tempFile(prefix: String, suffix: String, block: (file: File)->T):
 
 object KyScriptConfig {
 
-    var defaultPythonPath = "python3"
+    var defaultPythonPath: String = "python3"
+    var defaultTempFilePrefix: String = "kyscript_generated"
 
 }
 
 class KyScriptExecutor(
-    var script: String = "",
+    var script: KyScript = kyScript(""),
     var pythonPath: String = KyScriptConfig.defaultPythonPath,
-    var scriptArguments: List<String> = emptyList(),
+    var scriptArguments: MutableList<String> = mutableListOf(),
+    var workingDirectory: File? = null,
     var timeoutMillis: Long? = null
 ) {
 
-    fun execute(): String = tempFile("kyscript_generated", ".py") { file ->
-        file.writeText(script)
+    fun execute(): String = when(val script = script) {
 
-        readProcess("python3", timeoutMillis) {
-            arguments += file.absolutePath
+        is KyScript.FromString -> tempFile(
+            prefix = KyScriptConfig.defaultTempFilePrefix,
+            suffix = ".py"
+        ) { file ->
+            file.writeText(script.text)
+            execute(file)
         }
+
+        is KyScript.FromFile -> execute(script.file)
+
+    }
+
+    private fun execute(file: File) = readProcess(pythonPath, timeoutMillis) {
+        arguments += file.absolutePath
+        arguments += scriptArguments
+
+        val scriptWorkingDirectory = this@KyScriptExecutor.workingDirectory
+
+        if (scriptWorkingDirectory != null)
+            workingDirectory = scriptWorkingDirectory
 
     }
 
 }
 
+inline fun runKyScript(script: File, config: KyScriptExecutor.()->Unit = {}): String =
+    runKyScript(kyScript(script), config)
+
+inline fun runKyScript(script: String, config: KyScriptExecutor.()->Unit = {}): String =
+    runKyScript(kyScript(script), config)
+
+inline fun runKyScript(script: KyScript = kyScript(""), config: KyScriptExecutor.()->Unit = {}): String =
+    KyScriptExecutor(script = script)
+        .apply(config)
+        .execute()
