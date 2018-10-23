@@ -2,16 +2,6 @@ package tomasvolker.kyscript
 
 import java.io.File
 
-inline fun <T> tempFile(prefix: String, suffix: String, block: (file: File)->T): T {
-    var file: File? = null
-    try {
-        file = File.createTempFile(prefix, suffix)
-        return block(file)
-    } finally {
-        file?.delete()
-    }
-}
-
 object KyScriptConfig {
 
     var defaultPythonPath: String = "python3"
@@ -27,21 +17,43 @@ class KyScriptExecutor(
     var timeoutMillis: Long? = null
 ) {
 
-    fun execute(): String = when(val script = script) {
+    fun executeAndRead(): String = when(val script = script) {
 
-        is KyScript.FromString -> tempFile(
+        is KyScript.FromString -> withScript(script) { file ->
+            readScript(file)
+        }
+
+        is KyScript.FromFile -> readScript(script.file)
+
+    }
+
+    fun execute(): Process = when(val script = script) {
+
+        is KyScript.FromString -> withScript(script) { file ->
+            runScript(file)
+        }
+
+        is KyScript.FromFile -> runScript(script.file)
+
+    }
+
+    private inline fun <T> withScript(script: KyScript.FromString, block: (File)->T) =
+        tempFile(
             prefix = KyScriptConfig.defaultTempFilePrefix,
             suffix = ".py"
         ) { file ->
             file.writeText(script.text)
-            execute(file)
+            block(file)
         }
 
-        is KyScript.FromFile -> execute(script.file)
+    private fun readScript(file: File): String =
+        readProcess(pythonPath, timeoutMillis) { configure(file) }
 
-    }
+    private fun runScript(file: File): Process =
+        startProcess(pythonPath) { configure(file) }
 
-    private fun execute(file: File) = readProcess(pythonPath, timeoutMillis) {
+    private fun ProcessBuilder.configure(file: File) {
+
         arguments += file.absolutePath
         arguments += scriptArguments
 
@@ -54,13 +66,24 @@ class KyScriptExecutor(
 
 }
 
-inline fun runKyScript(script: File, config: KyScriptExecutor.()->Unit = {}): String =
+inline fun readKyScript(script: File, config: KyScriptExecutor.()->Unit = {}): String =
+    readKyScript(kyScript(script), config)
+
+inline fun readKyScript(script: String, config: KyScriptExecutor.()->Unit = {}): String =
+    readKyScript(kyScript(script), config)
+
+inline fun readKyScript(script: KyScript = kyScript(""), config: KyScriptExecutor.()->Unit = {}): String =
+    KyScriptExecutor(script = script)
+        .apply(config)
+        .executeAndRead()
+
+inline fun runKyScript(script: File, config: KyScriptExecutor.()->Unit = {}): Process =
     runKyScript(kyScript(script), config)
 
-inline fun runKyScript(script: String, config: KyScriptExecutor.()->Unit = {}): String =
+inline fun runKyScript(script: String, config: KyScriptExecutor.()->Unit = {}): Process =
     runKyScript(kyScript(script), config)
 
-inline fun runKyScript(script: KyScript = kyScript(""), config: KyScriptExecutor.()->Unit = {}): String =
+inline fun runKyScript(script: KyScript = kyScript(""), config: KyScriptExecutor.()->Unit = {}): Process =
     KyScriptExecutor(script = script)
         .apply(config)
         .execute()

@@ -153,34 +153,24 @@ open class KyScriptWriter {
 
     fun build(): KyScript = kyScript(script.toString())
 
+    fun String.escapeChars(): String =
+        this.asSequence()
+            .flatMap {
+                when(it) {
+                    '\\' -> "\\\\"
+                    '\n' -> "\\n"
+                    '\r' -> "\\r"
+                    '\t' -> "\\t"
+                    '"' -> "\\\""
+                    '\'' -> "\\\'"
+                    '\b' -> "\\\b"
+                    else -> it.toString()
+                }.asSequence()
+            }.joinToString(separator = "")
+
+    data class KyNamedArgument(val name: String, val value: Any?)
+
 }
-
-fun String.escapeChars(): String =
-    this.asSequence()
-        .flatMap {
-            when(it) {
-                '\\' -> "\\\\"
-                '\n' -> "\\n"
-                '\r' -> "\\r"
-                '\t' -> "\\t"
-                '"' -> "\\\""
-                '\'' -> "\\\'"
-                '\b' -> "\\\b"
-                else -> it.toString()
-            }.asSequence()
-        }.joinToString(separator = "")
-
-sealed class KyExpression(val code: String) {
-    override fun toString(): String = code
-}
-
-class KyIdentifier(name: String): KyExpression(name) {
-    val name get() = code
-}
-
-class KyInject(code: String): KyExpression(code)
-
-data class KyNamedArgument(val name: String, val value: Any?)
 
 inline fun kyScript(block: KyScriptWriter.()->Unit): KyScript =
         KyScriptWriter().apply(block).build()

@@ -4,6 +4,18 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
+/**
+ * Starts the process with the given command and reads it's standard output, returning it as a string.
+ * The functions blocks until the process exits. By default, the process' standard error is redirected to it's
+ * standard output.
+ *
+ * @param command The command to run
+ * @param timeoutMillis Timeout to read the processes output, if reached a [TimeoutException] is thrown. The default
+ * is null, which indicates that there is no timeout
+ * @param init Initializer block of the [ProcessBuilder] to further configure the execution.
+ *
+ * @string The standard output of the process as a string
+ */
 inline fun readProcess(
     command: String = "",
     timeoutMillis: Long? = null,

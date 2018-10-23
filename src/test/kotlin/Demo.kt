@@ -42,7 +42,7 @@ fun main() {
 
     println(script)
 
-    val result = runKyScript(script)
+    val result = readKyScript(script)
 
     println(result)
 
