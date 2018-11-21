@@ -35,6 +35,9 @@ inline fun readProcess(
             throw TimeoutException()
         }
 
+        if (process.exitValue() != 0)
+            throw RuntimeException(process.inputStream.bufferedReader().readText())
+
         return process.inputStream.bufferedReader().readText()
 
     } finally {
@@ -43,7 +46,7 @@ inline fun readProcess(
 
 }
 
-inline fun startProcess(command: String = "", init: ProcessBuilder.()->Unit) =
+inline fun startProcess(command: String = "", init: ProcessBuilder.()->Unit): Process =
     ProcessBuilder().apply {
         this.command = command
         init()

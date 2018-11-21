@@ -1,27 +1,31 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    java
-    kotlin("jvm") version "1.3.0-rc-146"
+    kotlin("jvm") version "1.3.0"
 }
 
 group = "tomasvolker"
-version = "1.0-SNAPSHOT"
+version = "0.0.1"
 
 repositories {
-    maven { setUrl("http://dl.bintray.com/kotlin/kotlin-eap") }
     mavenCentral()
 }
 
 dependencies {
-    compile(kotlin("stdlib-jdk8"))
-    compile("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "0.26.1-eap13")
+    compile(kotlin("stdlib"))
     testCompile("junit", "junit", "4.12")
 }
-
-configure<JavaPluginConvention> {
+/*
+java {
     sourceCompatibility = JavaVersion.VERSION_1_8
 }
+
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+*/
+val sourcesJar = tasks.create<Jar>("sourcesJar") {
+    group = JavaBasePlugin.DOCUMENTATION_GROUP
+    classifier = "sources"
+    from(sourceSets["main"].allSource)
 }

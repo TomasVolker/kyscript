@@ -11,8 +11,6 @@ fun main() {
         comment(
             """
         |Auto generated script
-        |Python is so shit we
-        |have to generate it
         """.trimMargin()
         )
 

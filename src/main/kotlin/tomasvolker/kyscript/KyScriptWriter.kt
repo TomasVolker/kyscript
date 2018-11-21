@@ -70,6 +70,8 @@ open class KyScriptWriter {
 
     fun id(name: String) = KyIdentifier(name)
 
+    fun KyIdentifier.id(name: String) = KyIdentifier("$this.$name")
+
     fun inject(code: String) = KyInject(code)
 
     operator fun KyIdentifier.invoke(vararg expression: Any?) =
@@ -85,47 +87,50 @@ open class KyScriptWriter {
                 value = value
             )
 
-    fun Any?.toPythonExpression(): String = when(this) {
+    fun Any?.toPythonExpression(): String = serializeToPython(this)
+
+    protected open fun serializeToPython(value: Any?): String = when(value) {
 
         null -> "None"
 
-        is KyExpression -> code
+        is KyExpression -> value.code
 
-        is KyNamedArgument -> "$name = ${value.toPythonExpression()}"
+        is KyNamedArgument -> "${value.name} = ${value.value.toPythonExpression()}"
 
-        is String -> '\'' + this.escapeChars() + '\''
+        is String -> '\'' + value.escapeChars() + '\''
 
-        is Number -> if(this is Double && isNaN() || this is Float && isNaN())
+        is Char ->  value.toString().toPythonExpression()
+
+        is Boolean -> if (value) "True" else "False"
+
+        is Number -> if(value is Double && value.isNaN() || value is Float && value.isNaN())
                 "float('nan')"
             else
-                when(this) {
+                when(value) {
                     Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY -> "float('+inf')"
                     Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY -> "float('-inf')"
-                    else -> toString()
+                    else -> value.toString()
                 }
 
-        is List<*> -> this.joinToString(
+        is List<*> -> value.joinToString(
             separator = ", ",
             prefix = "[",
             postfix = "]"
         ) { it.toPythonExpression() }
 
-        is Set<*> -> this.joinToString(
+        is Set<*> -> value.joinToString(
             separator = ", ",
             prefix = "{",
             postfix = "}"
         ) { it.toPythonExpression() }
 
-        is Map<*, *> -> this.entries.joinToString(
+        is Map<*, *> -> value.entries.joinToString(
             separator = ", ",
             prefix = "{",
             postfix = "}"
         ) { "${it.key.toPythonExpression()}:${it.value.toPythonExpression()}" }
 
-
         else -> {
-
-            val obj = this
 
             if (this::class.java.isArray) {
                 buildString {
@@ -134,10 +139,10 @@ open class KyScriptWriter {
 
                     var first = true
 
-                    for (i in 0 until Array.getLength(obj)) {
+                    for (i in 0 until Array.getLength(value)) {
                         if (!first)
                             append(", ")
-                        append(Array.get(obj, i).toPythonExpression())
+                        append(Array.get(value, i).toPythonExpression())
                         first = false
                     }
 
